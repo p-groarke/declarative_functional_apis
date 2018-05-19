@@ -15,8 +15,10 @@ struct is_detected : std::false_type {};
 template <template <class> class Op, class T>
 struct is_detected<Op, T, std::void_t<Op<T>>> : std::true_type {};
 
+namespace {
 template <template <class> class Op, class T>
 constexpr bool is_detected_v = is_detected<Op, T>::value;
+}
 
 template <class T>
 using uses_metadata = decltype(std::declval<T>()(
