@@ -58,10 +58,33 @@ struct is_tuple<std::tuple<Ts...>> : std::true_type {};
 namespace {
 template <class... Ts>
 constexpr bool is_tuple_v = is_tuple<Ts...>::value;
+
+// Vittorio Romeo
+// https://stackoverflow.com/questions/47511415/checking-if-variadic-template-parameters-are-unique-using-fold-expressions
+template <typename...>
+constexpr bool is_unique = std::true_type{};
+
+template <typename T, typename... Rest>
+constexpr bool is_unique<T, Rest...> = std::bool_constant<
+		(!std::is_same_v<T, Rest> && ...) && is_unique<Rest...>>{};
+
+template <class... Ts>
+constexpr bool is_tuple_unique(std::tuple<Ts...>) {
+	return is_unique<Ts...>;
 }
+} // namespace
 
 template <class... Args>
 struct some_tuple_wrapper final {
+	static_assert(is_unique<Args...>, "wrapper requires unique types");
+
+	// Simple version.
+	template <class... Ts, class Invokable>
+	void execute(Invokable&& invokable) const {
+		std::apply(std::forward<Invokable>(invokable),
+				std::make_tuple(std::get<Ts>(_data)...));
+	}
+
 	template <class T>
 	const auto& get() const {
 		return std::get<T>(_data);
@@ -85,8 +108,10 @@ struct some_tuple_wrapper final {
 
 	template <class Invokable>
 	void execute_freedom(Invokable&& invokable) const {
-		auto dummy = function_traits<Invokable>::args_decay{};
+		static_assert(is_tuple_unique(function_traits<Invokable>::args_decay{}),
+				"only unique parameters are accepted");
 
+		auto dummy = function_traits<Invokable>::args_decay{};
 		if constexpr (std::tuple_size_v<decltype(dummy)> == 0) {
 			static_assert(false, "tsk tsk tsk");
 		}
@@ -116,14 +141,17 @@ int main(int, char**) {
 	printf("\nExample 2\n");
 
 	ex2::some_tuple_wrapper<int, double, float, char, short> tuple_burrito{};
-	tuple_burrito.execute_freedom(
-			[](const char& c, const double& d, const int& i) {
-				printf("%c, %f, %d\n", c, d, i);
-			});
+
+	tuple_burrito.execute<char, short>(
+			[](char c, short s) { printf("%c, %d\n", c, s); });
 
 	tuple_burrito.execute_freedom(
 			[](char c, short s) { printf("%c, %d\n", c, s); });
 
+	tuple_burrito.execute_freedom(
+			[](const char& c, const double& d, const int& i) {
+				printf("%c, %f, %d\n", c, d, i);
+			});
 
 	return 0;
 }
