@@ -9,32 +9,18 @@
 
 namespace ex1 {
 
-template <template <class> class Op, class T, class = void>
-struct is_detected : std::false_type {};
-
-template <template <class> class Op, class T>
-struct is_detected<Op, T, std::void_t<Op<T>>> : std::true_type {};
-
-namespace {
-template <template <class> class Op, class T>
-constexpr bool is_detected_v = is_detected<Op, T>::value;
-}
-
-template <class T>
-using uses_metadata = decltype(std::declval<T>()(
-		std::declval<const int&>(), std::declval<const std::string&>()));
-
 struct secret_garden final {
-	template <class Invokable>
-	void visit(Invokable&& invokable) const {
-		if constexpr (is_detected_v<uses_metadata, Invokable>) {
+	template <class Invocable>
+	void visit(Invocable&& invocable) const {
+		if constexpr (std::is_invocable_v<Invocable, const int&,
+							  const std::string&>) {
 			for (size_t i = 0; i < _data.size(); ++i) {
-				std::invoke(std::forward<Invokable>(invokable), _data[i],
+				std::invoke(std::forward<Invocable>(invocable), _data[i],
 						_meta_data[i]);
 			}
 		} else {
 			for (const auto& d : _data) {
-				std::invoke(std::forward<Invokable>(invokable), d);
+				std::invoke(std::forward<Invocable>(invocable), d);
 			}
 		}
 	}
@@ -79,10 +65,10 @@ struct some_tuple_wrapper final {
 	static_assert(is_unique<Args...>, "wrapper requires unique types");
 
 	// Simple version.
-	template <class... Ts, class Invokable>
-	void execute(Invokable&& invokable) const {
+	template <class... Ts, class Invocable>
+	void execute(Invocable&& invocable) const {
 		static_assert(is_unique<Ts...>, "only unique parameters are accepted");
-		std::apply(std::forward<Invokable>(invokable),
+		std::apply(std::forward<Invocable>(invocable),
 				std::make_tuple(std::get<Ts>(_data)...));
 	}
 
@@ -107,17 +93,17 @@ struct some_tuple_wrapper final {
 		}
 	}
 
-	template <class Invokable>
-	void execute_freedom(Invokable&& invokable) const {
-		static_assert(is_tuple_unique(function_traits<Invokable>::args_decay{}),
+	template <class Invocable>
+	void execute_freedom(Invocable&& invocable) const {
+		static_assert(is_tuple_unique(function_traits<Invocable>::args_decay{}),
 				"only unique parameters are accepted");
 
-		auto dummy = function_traits<Invokable>::args_decay{};
+		auto dummy = function_traits<Invocable>::args_decay{};
 		if constexpr (std::tuple_size_v<decltype(dummy)> == 0) {
 			static_assert(false, "tsk tsk tsk");
 		}
 
-		std::apply(std::forward<Invokable>(invokable), get(dummy));
+		std::apply(std::forward<Invocable>(invocable), get(dummy));
 	}
 
 private:

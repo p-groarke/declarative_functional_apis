@@ -5,7 +5,8 @@
 // Based off of Functional C++ blog post :
 // https://functionalcpp.wordpress.com/2013/08/05/function-traits/
 
-// Required for the functor overload, as the object type gets stored in args.
+// Required for the "functor" overload, as the object reference would get stored
+// in args.
 template <class...>
 struct drop_first;
 
@@ -25,8 +26,8 @@ struct function_traits<R (*)(Args...)> : public function_traits<R(Args...)> {};
 
 template <class R, class... Args>
 struct function_traits<R(Args...)> {
-	using args = std::tuple<Args...>;
-	using args_decay = std::tuple<std::decay_t<Args>...>;
+	using args = std::tuple<Args...>; // Store the args for later use.
+	using args_decay = std::tuple<std::decay_t<Args>...>; // No decorations.
 };
 
 // member function pointer
