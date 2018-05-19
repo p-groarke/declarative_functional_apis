@@ -27,14 +27,6 @@ template <class R, class... Args>
 struct function_traits<R(Args...)> {
 	using args = std::tuple<Args...>;
 	using args_decay = std::tuple<std::decay_t<Args>...>;
-	using return_type = R;
-	static constexpr std::size_t arity = sizeof...(Args);
-
-	template <std::size_t N>
-	struct argument {
-		static_assert(N < arity, "error: invalid parameter index.");
-		using type = typename std::tuple_element_t<N, args>;
-	};
 };
 
 // member function pointer
@@ -61,14 +53,6 @@ public:
 	using args = typename drop_first<typename call_type::args>::type;
 	using args_decay =
 			typename drop_first<typename call_type::args_decay>::type;
-	using return_type = typename call_type::return_type;
-	static constexpr std::size_t arity = call_type::arity;
-
-	template <std::size_t N>
-	struct argument {
-		static_assert(N < arity, "error: invalid parameter index.");
-		using type = typename std::tuple_element_t<N, args>;
-	};
 };
 
 template <class F>
@@ -76,4 +60,3 @@ struct function_traits<F&> : public function_traits<F> {};
 
 template <class F>
 struct function_traits<F&&> : public function_traits<F> {};
-
