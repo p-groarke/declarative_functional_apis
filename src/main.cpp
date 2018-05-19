@@ -81,6 +81,7 @@ struct some_tuple_wrapper final {
 	// Simple version.
 	template <class... Ts, class Invokable>
 	void execute(Invokable&& invokable) const {
+		static_assert(is_unique<Ts...>, "only unique parameters are accepted");
 		std::apply(std::forward<Invokable>(invokable),
 				std::make_tuple(std::get<Ts>(_data)...));
 	}
