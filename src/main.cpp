@@ -11,16 +11,15 @@ namespace ex1 {
 
 struct secret_garden final {
 	template <class Invocable>
-	void visit(Invocable&& invocable) const {
+	void visit(const Invocable& invocable) const {
 		if constexpr (std::is_invocable_v<Invocable, const int&,
 							  const std::string&>) {
 			for (size_t i = 0; i < _data.size(); ++i) {
-				std::invoke(std::forward<Invocable>(invocable), _data[i],
-						_meta_data[i]);
+				std::invoke(invocable, _data[i], _meta_data[i]);
 			}
 		} else {
 			for (const auto& d : _data) {
-				std::invoke(std::forward<Invocable>(invocable), d);
+				std::invoke(invocable, d);
 			}
 		}
 	}
@@ -95,13 +94,13 @@ struct some_tuple_wrapper final {
 
 	template <class Invocable>
 	void execute_freedom(Invocable&& invocable) const {
-		static_assert(is_tuple_unique(function_traits<Invocable>::args_decay{}),
+		static_assert(
+				is_tuple_unique(
+						typename function_traits<Invocable>::args_decay{}),
 				"only unique parameters are accepted");
 
-		auto dummy = function_traits<Invocable>::args_decay{};
-		if constexpr (std::tuple_size_v<decltype(dummy)> == 0) {
-			static_assert(false, "tsk tsk tsk");
-		}
+		auto dummy = typename function_traits<Invocable>::args_decay{};
+		static_assert(std::tuple_size_v<decltype(dummy)> != 0, "tsk tsk tsk");
 
 		std::apply(std::forward<Invocable>(invocable), get(dummy));
 	}
